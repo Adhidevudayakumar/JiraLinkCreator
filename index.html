@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSV to Jira Hyperlinks</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .container {
+      background: white;
+      width: 100%;
+      max-width: 700px;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+    input,
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #preview {
+      margin-top: 25px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 16px;
+      max-height: 300px;
+      overflow: auto;
+      background: #fafafa;
+    }
+
+    #preview a {
+      display: block;
+      margin-bottom: 8px;
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    #preview a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>CSV → Jira Hyperlinks</h1>
+
+  <p>
+    Upload CSV and copy real clickable hyperlinks directly into Slack,
+    Teams, Confluence, Word, Gmail, etc.
+  </p>
+
+  <input
+    type="text"
+    id="jiraBase"
+    value="https://newagesmb.atlassian.net/browse/"
+  />
+
+  <input type="file" id="csvFile" accept=".csv" />
+
+  <button onclick="generateLinks()">
+    Generate Links
+  </button>
+
+  <button onclick="copyRichLinks()">
+    Copy Rich Hyperlinks
+  </button>
+
+  <div id="preview"></div>
+</div>
+
+<script>
+  let generatedHTML = '';
+
+  function generateLinks() {
+    const fileInput = document.getElementById('csvFile');
+    const jiraBase = document.getElementById('jiraBase').value.trim();
+    const preview = document.getElementById('preview');
+
+    if (!fileInput.files.length) {
+      alert('Please upload a CSV file');
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const text = e.target.result;
+
+      // Extract Jira IDs
+      const matches = text.match(/[A-Z]+-\d+/g) || [];
+
+      // Remove duplicates
+      const unique = [...new Set(matches)];
+
+      generatedHTML = unique
+        .map(id => {
+          const url = jiraBase + id;
+          return <div><a href="${url}">${id}</a></div>;
+        })
+        .join('');
+
+      preview.innerHTML = generatedHTML;
+    };
+
+    reader.readAsText(file);
+  }
+
+  async function copyRichLinks() {
+    if (!generatedHTML) {
+      alert('Generate links first');
+      return;
+    }
+
+    const blob = new Blob(
+      [generatedHTML],
+      { type: 'text/html' }
+    );
+
+    const data = [
+      new ClipboardItem({
+        'text/html': blob
+      })
+    ];
+
+    await navigator.clipboard.write(data);
+
+    alert('Rich hyperlinks copied!');
+  }
+</script>
+
+</body>
+</html>
