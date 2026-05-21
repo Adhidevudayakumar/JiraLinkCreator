@@ -1,169 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CSV to Jira Hyperlinks</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jira Link Creator</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      display: flex;
-      justify-content: center;
-      padding: 40px;
-    }
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+    }
 
-    .container {
-      background: white;
-      width: 100%;
-      max-width: 700px;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-    }
+    .container {
+      width: 100%;
+      max-width: 700px;
+      background: white;
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
 
-    h1 {
-      margin-bottom: 10px;
-    }
+    h1 {
+      margin-bottom: 10px;
+    }
 
-    p {
-      color: #666;
-      margin-bottom: 25px;
-    }
+    p {
+      color: #666;
+      margin-bottom: 24px;
+    }
 
-    input,
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-bottom: 16px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-    }
+    input,
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
 
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-    button:hover {
-      background: #1d4ed8;
-    }
+    button:hover {
+      background: #1d4ed8;
+    }
 
-    #preview {
-      margin-top: 25px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 16px;
-      max-height: 300px;
-      overflow: auto;
-      background: #fafafa;
-    }
+    #preview {
+      margin-top: 24px;
+      padding: 18px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fafafa;
+      max-height: 350px;
+      overflow-y: auto;
+    }
 
-    #preview a {
-      display: block;
-      margin-bottom: 8px;
-      color: #2563eb;
-      text-decoration: none;
-    }
+    #preview a {
+      display: block;
+      margin-bottom: 10px;
+      color: #2563eb;
+      text-decoration: none;
+    }
 
-    #preview a:hover {
-      text-decoration: underline;
-    }
-  </style>
+    #preview a:hover {
+      text-decoration: underline;
+    }
+
+    .success {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>CSV → Jira Hyperlinks</h1>
+  <h1>CSV → Jira Hyperlinks</h1>
 
-  <p>
-    Upload CSV and copy real clickable hyperlinks directly into Slack,
-    Teams, Confluence, Word, Gmail, etc.
-  </p>
+  <p>
+    Upload CSV and generate copy-pasteable clickable Jira links.
+  </p>
 
-  <input
-    type="text"
-    id="jiraBase"
-    value="https://newagesmb.atlassian.net/browse/"
-  />
+  <input
+    type="text"
+    id="jiraBase"
+    value="https://newagesmb.atlassian.net/browse/"
+  />
 
-  <input type="file" id="csvFile" accept=".csv" />
+  <input
+    type="file"
+    id="csvFile"
+    accept=".csv"
+  />
 
-  <button onclick="generateLinks()">
-    Generate Links
-  </button>
+  <button id="generateBtn">
+    Generate Links
+  </button>
 
-  <button onclick="copyRichLinks()">
-    Copy Rich Hyperlinks
-  </button>
+  <button id="copyBtn">
+    Copy Rich Hyperlinks
+  </button>
 
-  <div id="preview"></div>
+  <div id="preview"></div>
+
+  <div class="success" id="status"></div>
 </div>
 
 <script>
-  let generatedHTML = '';
+  let generatedHTML = '';
 
-  function generateLinks() {
-    const fileInput = document.getElementById('csvFile');
-    const jiraBase = document.getElementById('jiraBase').value.trim();
-    const preview = document.getElementById('preview');
+  const generateBtn = document.getElementById('generateBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const preview = document.getElementById('preview');
+  const status = document.getElementById('status');
 
-    if (!fileInput.files.length) {
-      alert('Please upload a CSV file');
-      return;
-    }
+  generateBtn.addEventListener('click', generateLinks);
+  copyBtn.addEventListener('click', copyRichLinks);
 
-    const file = fileInput.files[0];
-    const reader = new FileReader();
+  function generateLinks() {
+    const fileInput = document.getElementById('csvFile');
+    const jiraBase = document.getElementById('jiraBase').value.trim();
 
-    reader.onload = function(e) {
-      const text = e.target.result;
+    status.textContent = '';
 
-      // Extract Jira IDs
-      const matches = text.match(/[A-Z]+-\d+/g) || [];
+    if (!fileInput.files.length) {
+      alert('Please upload a CSV file');
+      return;
+    }
 
-      // Remove duplicates
-      const unique = [...new Set(matches)];
+    const file = fileInput.files[0];
 
-      generatedHTML = unique
-        .map(id => {
-          const url = jiraBase + id;
-          return <div><a href="${url}">${id}</a></div>;
-        })
-        .join('');
+    const reader = new FileReader();
 
-      preview.innerHTML = generatedHTML;
-    };
+    reader.onload = function(event) {
+      const text = event.target.result;
 
-    reader.readAsText(file);
-  }
+      const matches = text.match(/[A-Z]+-\d+/g) || [];
 
-  async function copyRichLinks() {
-    if (!generatedHTML) {
-      alert('Generate links first');
-      return;
-    }
+      const uniqueIds = [...new Set(matches)];
 
-    const blob = new Blob(
-      [generatedHTML],
-      { type: 'text/html' }
-    );
+      generatedHTML = uniqueIds
+        .map(id => {
+          const url = jiraBase + id;
 
-    const data = [
-      new ClipboardItem({
-        'text/html': blob
-      })
-    ];
+          return `
+            <div>
+              <a href="${url}" target="_blank">
+                ${id}
+              </a>
+            </div>
+          `;
+        })
+        .join('');
 
-    await navigator.clipboard.write(data);
+      preview.innerHTML = generatedHTML;
+    };
 
-    alert('Rich hyperlinks copied!');
-  }
+    reader.readAsText(file);
+  }
+
+  async function copyRichLinks() {
+    if (!generatedHTML) {
+      alert('Generate links first');
+      return;
+    }
+
+    try {
+      const blob = new Blob(
+        [generatedHTML],
+        { type: 'text/html' }
+      );
+
+      const clipboardItem = new ClipboardItem({
+        'text/html': blob
+      });
+
+      await navigator.clipboard.write([clipboardItem]);
+
+      status.textContent = 'Hyperlinks copied successfully!';
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        'Clipboard copy failed. Open using localhost or HTTPS.'
+      );
+    }
+  }
 </script>
 
 </body>
