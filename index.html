@@ -1,202 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jira Link Creator</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jira Link Creator</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      display: flex;
-      justify-content: center;
-      padding: 40px;
-    }
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .container {
-      width: 100%;
-      max-width: 700px;
-      background: white;
-      padding: 30px;
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 48px 16px;
+    }
 
-    h1 {
-      margin-bottom: 10px;
-    }
+    .card {
+      width: 100%;
+      max-width: 640px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 36px 32px;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+    }
 
-    p {
-      color: #666;
-      margin-bottom: 24px;
-    }
+    /* ── Header ── */
+    .card-header { margin-bottom: 28px; }
 
-    input,
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-bottom: 16px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-    }
+    .card-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
 
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
+    .card-header p {
+      font-size: 14px;
+      color: #6b7280;
+    }
 
-    button:hover {
-      background: #1d4ed8;
-    }
+    /* ── Fields ── */
+    .field { margin-bottom: 20px; }
 
-    #preview {
-      margin-top: 24px;
-      padding: 18px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      background: #fafafa;
-      max-height: 350px;
-      overflow-y: auto;
-    }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
 
-    #preview a {
-      display: block;
-      margin-bottom: 10px;
-      color: #2563eb;
-      text-decoration: none;
-    }
+    .text-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111827;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
 
-    #preview a:hover {
-      text-decoration: underline;
-    }
+    .text-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
 
-    .success {
-      margin-top: 10px;
-      color: green;
-      font-weight: bold;
-    }
-  </style>
+    /* ── Drop zone ── */
+    .drop-zone {
+      display: block;
+      border: 2px dashed #d1d5db;
+      border-radius: 10px;
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      user-select: none;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.active {
+      border-color: #2563eb;
+      background: #f0f5ff;
+    }
+
+    .drop-zone.active .dz-icon { color: #2563eb; }
+
+    .dz-icon {
+      color: #9ca3af;
+      margin-bottom: 8px;
+      transition: color 0.2s;
+    }
+
+    .dz-title {
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .dz-title strong { color: #2563eb; }
+
+    .dz-hint {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 3px;
+    }
+
+    .file-name {
+      font-size: 13px;
+      color: #059669;
+      font-weight: 500;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+
+    .btn-outline {
+      background: #fff;
+      color: #374151;
+      border: 1.5px solid #d1d5db;
+    }
+    .btn-outline:hover:not(:disabled) { background: #f9fafb; }
+
+    /* ── Inline message ── */
+    .inline-msg {
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .inline-msg.error   { color: #dc2626; }
+    .inline-msg.success { color: #059669; }
+
+    /* ── Results ── */
+    .results { margin-top: 28px; display: none; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .results-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .count-badge {
+      font-size: 12px;
+      font-weight: 600;
+      color: #2563eb;
+      background: #eff6ff;
+      padding: 2px 9px;
+      border-radius: 99px;
+    }
+
+    .links-list {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+
+    .link-row {
+      display: flex;
+      align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .link-row:last-child { border-bottom: none; }
+
+    .link-row a {
+      font-size: 13px;
+      font-weight: 500;
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .link-row a:hover { text-decoration: underline; }
+
+    .empty-msg {
+      padding: 32px;
+      text-align: center;
+      font-size: 14px;
+      color: #9ca3af;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>CSV → Jira Hyperlinks</h1>
+<div class="card">
+  <div class="card-header">
+    <h1>Jira Link Creator</h1>
+    <p>Upload a CSV file to extract and generate clickable Jira ticket links.</p>
+  </div>
 
-  <p>
-    Upload CSV and generate copy-pasteable clickable Jira links.
-  </p>
+  <div class="field">
+    <label class="field-label" for="jiraBase">Jira Base URL</label>
+    <input
+      class="text-input"
+      type="text"
+      id="jiraBase"
+      value="https://newagesmb.atlassian.net/browse/"
+      placeholder="https://yourorg.atlassian.net/browse/"
+    />
+  </div>
 
-  <input
-    type="text"
-    id="jiraBase"
-    value="https://newagesmb.atlassian.net/browse/"
-  />
+  <div class="field">
+    <label class="field-label">CSV File</label>
+    <label class="drop-zone" id="dropZone" for="csvFile">
+      <div class="dz-icon">
+        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6"
+             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0-12L9 7m3-3l3 3"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="dz-title"><strong>Choose a file</strong> or drag &amp; drop</div>
+      <div class="dz-hint">CSV files only</div>
+    </label>
+    <input type="file" id="csvFile" accept=".csv" hidden />
+    <div class="file-name" id="fileName"></div>
+  </div>
 
-  <input
-    type="file"
-    id="csvFile"
-    accept=".csv"
-  />
+  <div class="btn-row">
+    <button class="btn btn-primary" id="generateBtn">Generate Links</button>
+    <button class="btn btn-outline" id="copyBtn" disabled>Copy as Rich Links</button>
+  </div>
 
-  <button id="generateBtn">
-    Generate Links
-  </button>
+  <div class="inline-msg" id="inlineMsg"></div>
 
-  <button id="copyBtn">
-    Copy Rich Hyperlinks
-  </button>
-
-  <div id="preview"></div>
-
-  <div class="success" id="status"></div>
+  <div class="results" id="results">
+    <div class="results-header">
+      <span class="results-label">Tickets Found</span>
+      <span class="count-badge" id="countBadge"></span>
+    </div>
+    <div class="links-list" id="linksList"></div>
+  </div>
 </div>
 
-<script>
-  let generatedHTML = '';
-
-  const generateBtn = document.getElementById('generateBtn');
-  const copyBtn = document.getElementById('copyBtn');
-  const preview = document.getElementById('preview');
-  const status = document.getElementById('status');
-
-  generateBtn.addEventListener('click', generateLinks);
-  copyBtn.addEventListener('click', copyRichLinks);
-
-  function generateLinks() {
-    const fileInput = document.getElementById('csvFile');
-    const jiraBase = document.getElementById('jiraBase').value.trim();
-
-    status.textContent = '';
-
-    if (!fileInput.files.length) {
-      alert('Please upload a CSV file');
-      return;
-    }
-
-    const file = fileInput.files[0];
-
-    const reader = new FileReader();
-
-    reader.onload = function(event) {
-      const text = event.target.result;
-
-      const matches = text.match(/[A-Z]+-\d+/g) || [];
-
-      const uniqueIds = [...new Set(matches)];
-
-      generatedHTML = uniqueIds
-        .map(id => {
-          const url = jiraBase + id;
-
-          return `
-            <div>
-              <a href="${url}" target="_blank">
-                ${id}
-              </a>
-            </div>
-          `;
-        })
-        .join('');
-
-      preview.innerHTML = generatedHTML;
-    };
-
-    reader.readAsText(file);
-  }
-
-  async function copyRichLinks() {
-    if (!generatedHTML) {
-      alert('Generate links first');
-      return;
-    }
-
-    try {
-      const blob = new Blob(
-        [generatedHTML],
-        { type: 'text/html' }
-      );
-
-      const clipboardItem = new ClipboardItem({
-        'text/html': blob
-      });
-
-      await navigator.clipboard.write([clipboardItem]);
-
-      status.textContent = 'Hyperlinks copied successfully!';
-    } catch (error) {
-      console.error(error);
-
-      alert(
-        'Clipboard copy failed. Open using localhost or HTTPS.'
-      );
-    }
-  }
-</script>
-
+<script src="index.js"></script>
 </body>
 </html>
